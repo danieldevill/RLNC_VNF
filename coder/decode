@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo dataplane/build/dpdk_coder -l 0 -n 4 --file-prefix dpdk_coder -- -c decode
