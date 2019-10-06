@@ -50,9 +50,9 @@ APP = dpdk_coder
 SRCS-y := dpdk_coder.c
 
 # Add kodo headers and link to shared library. Also included libconfig library. DD.
-CFLAGS += -I/home/coder/kodo-c/shared_kodoc/include
+CFLAGS += -I/home/coder/RLNC_VNF/coder/dataplane/kodo-c/shared_kodoc/include
 # List of libraries to link with
-LDLIBS += -L/home/coder/dataplane/kodo-c/shared_kodoc -Bdynamic -lkodoc -lstdc++ -rpath=/home/coder/dataplane/kodo-c/shared_kodoc
+LDLIBS += -L/home/coder/RLNC_VNF/coder/dataplane/kodo-c/shared_kodoc -Bdynamic -lkodoc -lstdc++ -rpath=/home/coder/RLNC_VNF/coder/dataplane/kodo-c/shared_kodoc
 
 CFLAGS += -O0 -g
 CFLAGS += $(WERROR_FLAGS)

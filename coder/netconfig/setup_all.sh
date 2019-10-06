@@ -3,7 +3,7 @@
 #Start DPDK setup.
 
 #Export $RTE_SDK
-export RTE_SDK=/usr/src/dpdk-stable-18.11.1
+export RTE_SDK=/usr/src/dpdk-stable-18.11.2
 
 #Bind device to DPDK
 echo Binding devices to DPDK..

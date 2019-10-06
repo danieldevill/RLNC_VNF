@@ -38,7 +38,7 @@
 
 //Includes for Kodo-c library
 #include <time.h>
-#include </home/coder/dataplane/kodo-c/shared_kodoc/include/kodoc/kodoc.h>
+#include </home/coder/RLNC_VNF/coder/dataplane/kodo-c/shared_kodoc/include/kodoc/kodoc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
