@@ -251,6 +251,10 @@ genID_in_genTable(char *generationID) //Need to add a flushing policy
 static void
 net_encode(kodoc_factory_t *encoder_factory)
 {
+    clock_t t_encoder_overall; //Time benchmark for overall encoding process.
+    clock_t t_encoder_coder; //Time benchmark for RLNC coding of encoding process.
+    clock_t t_encoder_load; //Time benchmark to load data into and out of the encoder.
+
     //Loop through each dst_addr in the MAC table and check if the ring is full. If the ring is full then begin encoding on that queue.
     for(uint i=0;i<=mac_counter;i++)
     {
@@ -263,7 +267,10 @@ net_encode(kodoc_factory_t *encoder_factory)
         {
             if(rte_ring_count(encode_ring_ptr)==MAX_SYMBOLS-1) //Check if ring is fulled, if so, begin encoding. Also need to add if the time limit is reached as an OR.
             {
-                //Begin decoding on rings.
+                //BENCHMARK
+                t_encoder_overall = clock();
+
+                //Begin encoding on rings.
                 uint* obj_left = 0;
                 //rte_mbuf to hold the dequeued data.
                 struct rte_mbuf *dequeued_data[MAX_SYMBOLS-1];
@@ -309,6 +316,9 @@ net_encode(kodoc_factory_t *encoder_factory)
                 
                     struct ether_addr d_addr, s_addr;
 
+                    //BENCHMARK
+                    t_encoder_coder = clock();
+
                     //Loop through each packet in the queue.
                     for(uint pkt=0;pkt<MAX_SYMBOLS-1;pkt++)
                     {                        
@@ -352,8 +362,16 @@ net_encode(kodoc_factory_t *encoder_factory)
                         rte_pktmbuf_free(encoded_mbuf);
                     }
 
+                    //BENCHMARK end.
+                    t_encoder_coder = clock() - t_encoder_coder;
+                    printf("t_encoder_coder: %f\n",((double)t_encoder_coder)/CLOCKS_PER_SEC);
+
                     rte_pktmbuf_free(rte_mbuf_data_in);
                     kodoc_delete_coder(encoder);
+
+                    //BENCHMARK end.
+                    t_encoder_overall = clock() - t_encoder_overall;
+                    printf("t_encoder_overall: %f\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
 
                 }
                 else
