@@ -388,6 +388,10 @@ net_encode(kodoc_factory_t *encoder_factory)
 static void
 net_decode(kodoc_factory_t *decoder_factory)
 {
+    clock_t t_decoder_overall; //Time benchmark for overall encoding process.
+    clock_t t_decoder_coder; //Time benchmark for RLNC coding of encoding process.
+    clock_t t_decoder_load; //Time benchmark to load data into and out of the encoder.
+
     //Loop through each decoding ring and check if the ring has atleast one object. 
     for(uint i=0;i<genIDcounter;i++)
     {
@@ -400,6 +404,9 @@ net_decode(kodoc_factory_t *decoder_factory)
             printf("In Ring %s Count:%d\n",decoding_ring->name,rte_ring_count(decoding_ring));
             if(rte_ring_count(decoding_ring)>=MAX_SYMBOLS-1) //Check if ring is fulled, if so, begin decoding. Also need to add if the time limit is reached as an OR.
             {
+                //BENCHMARK
+                t_decoder_overall = clock();
+
                 //Begin decoding on rings.
                 uint* obj_left = 0;
                 //rte_mbuf to hold the dequeued data.
@@ -420,6 +427,9 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                     //Specifies the data buffer where the decoder will store the decoded symbol.
                     kodoc_set_mutable_symbols(decoder , data_out, block_size);
+
+                    //BENCHMARK
+                    t_decoder_coder = clock();
 
                     //Loop through each packet in the queue. In the future, it would be better to encode as a group using pointers instead.
                     uint pkt=0;
@@ -464,6 +474,10 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                         pkt++;
                     }
+
+                    //BENCHMARK end.
+                    t_decoder_coder = clock() - t_decoder_coder;
+                    printf("\n\n\n\n\n\nt_decoder_coder: %f\n\n\n\n\n\n",((double)t_decoder_coder)/CLOCKS_PER_SEC);
 
                     uint8_t* pkt_ptr = data_out;
                     for(uint pkt=0;pkt<MAX_SYMBOLS-1;pkt++) //Get decoded packets from data_out and send those out again. Resultant packets are systematic.
@@ -529,8 +543,14 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                     //Free decoder.
                     kodoc_delete_coder(decoder);
+
+
                 }
                 rte_ring_free(decoding_ring);
+
+                //BENCHMARK end.
+                t_decoder_overall = clock() - t_decoder_overall;
+                printf("\n\n\n\n\nt_decoder_overall: %f\n\n\n\n\n\n\n",((double)t_decoder_overall)/CLOCKS_PER_SEC);
             }   
         }
     }
