@@ -269,6 +269,7 @@ net_encode(kodoc_factory_t *encoder_factory)
             {
                 //BENCHMARK
                 t_encoder_overall = clock();
+                t_encoder_load = clock();
 
                 //Begin encoding on rings.
                 uint* obj_left = 0;
@@ -278,6 +279,14 @@ net_encode(kodoc_factory_t *encoder_factory)
                 rte_ring_dequeue_bulk(encode_ring_ptr,(void **)dequeued_data,MAX_SYMBOLS-1,obj_left);
                 if(rte_ring_count(encode_ring_ptr)==0) //Checks if dequeued correctly.
                 {
+                    //BENCHMARK
+                    //End load-in BENCHMARK
+                    t_encoder_load = clock() - t_encoder_load;
+                    printf("t_encoder_load: %f\n",((double)t_encoder_load)/CLOCKS_PER_SEC);
+
+                    //Begin coder BENCHMARK
+                    t_encoder_coder = clock();
+
                     kodoc_coder_t encoder = kodoc_factory_build_coder(*encoder_factory);
 
                     kodoc_set_systematic_off(encoder);
@@ -315,9 +324,6 @@ net_encode(kodoc_factory_t *encoder_factory)
                     }
                 
                     struct ether_addr d_addr, s_addr;
-
-                    //BENCHMARK
-                    t_encoder_coder = clock();
 
                     //Loop through each packet in the queue.
                     for(uint pkt=0;pkt<MAX_SYMBOLS-1;pkt++)
@@ -362,14 +368,14 @@ net_encode(kodoc_factory_t *encoder_factory)
                         rte_pktmbuf_free(encoded_mbuf);
                     }
 
-                    //BENCHMARK end.
+                    //Coder BENCHMARK end.
                     t_encoder_coder = clock() - t_encoder_coder;
                     printf("t_encoder_coder: %f\n",((double)t_encoder_coder)/CLOCKS_PER_SEC);
 
                     rte_pktmbuf_free(rte_mbuf_data_in);
                     kodoc_delete_coder(encoder);
 
-                    //BENCHMARK end.
+                    //Overall BENCHMARK end.
                     t_encoder_overall = clock() - t_encoder_overall;
                     printf("t_encoder_overall: %f\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
 
