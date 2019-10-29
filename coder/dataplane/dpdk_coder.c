@@ -282,8 +282,7 @@ net_encode(kodoc_factory_t *encoder_factory)
                     //BENCHMARK
                     //End load-in BENCHMARK
                     t_encoder_load = clock() - t_encoder_load;
-                    printf("t_encoder_load: %f\n",((double)t_encoder_load)/CLOCKS_PER_SEC);
-
+                    
                     //Begin coder BENCHMARK
                     t_encoder_coder = clock();
 
@@ -340,7 +339,7 @@ net_encode(kodoc_factory_t *encoder_factory)
 
                         //Writes a symbol to the payload buffer.
                         int bytes_used = kodoc_write_payload(encoder, payload);
-                        printf("EncodedPkt Generated: rank:%d bytes_used:%d\n", kodoc_rank(encoder), bytes_used);
+                        //printf("EncodedPkt Generated: rank:%d bytes_used:%d\n", kodoc_rank(encoder), bytes_used);
 
                         //Create mbuf for encoded reply
                         struct rte_mbuf* encoded_mbuf = rte_pktmbuf_alloc(l2fwd_pktmbuf_pool);
@@ -355,9 +354,9 @@ net_encode(kodoc_factory_t *encoder_factory)
                         encoded_data = rte_memcpy(encoded_data+GENID_LEN,payload,kodoc_payload_size(encoder)); //Add payload
 
                         //Temp print encoded packet
-                        rte_pktmbuf_dump(stdout,m,250);
-                        rte_pktmbuf_dump(stdout,encoded_mbuf,250);
-                        printf("\n\n");
+                        //rte_pktmbuf_dump(stdout,m,250);
+                        //rte_pktmbuf_dump(stdout,encoded_mbuf,250);
+                        //printf("\n\n");
 
                         /* Transmit coded packet */
                         struct rte_mbuf* tx_mbuf = encoded_mbuf;
@@ -370,6 +369,7 @@ net_encode(kodoc_factory_t *encoder_factory)
 
                     //Coder BENCHMARK end.
                     t_encoder_coder = clock() - t_encoder_coder;
+                    printf("t_encoder_load: %f\n",((double)t_encoder_load)/CLOCKS_PER_SEC);
                     printf("t_encoder_coder: %f\n",((double)t_encoder_coder)/CLOCKS_PER_SEC);
 
                     rte_pktmbuf_free(rte_mbuf_data_in);
@@ -377,7 +377,9 @@ net_encode(kodoc_factory_t *encoder_factory)
 
                     //Overall BENCHMARK end.
                     t_encoder_overall = clock() - t_encoder_overall;
-                    printf("t_encoder_overall: %f\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
+                    printf("t_encoder_overall: %f\n\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
+
+                    
 
                 }
                 else
@@ -514,8 +516,8 @@ net_decode(kodoc_factory_t *decoder_factory)
                         /* Transmit decoded mbuf */
                         struct rte_mbuf* tx_mbuf = decoded_mbuf;
                         /*Print packet in and decoded packet*/
-                        rte_pktmbuf_dump(stdout,m,250);
-                        rte_pktmbuf_dump(stdout,tx_mbuf,250);
+                        //rte_pktmbuf_dump(stdout,m,250);
+                        //rte_pktmbuf_dump(stdout,tx_mbuf,250);
                         const uint16_t tx_pkt = rte_eth_tx_burst(0,0,&tx_mbuf,1);
 
                         rte_pktmbuf_free(decoded_mbuf);
@@ -757,7 +759,7 @@ main(int argc, char *argv[])
                     char ring_name[30];
                     sprintf(ring_name,"encoding_ring%d",index);
                     struct rte_ring* encode_ring_ptr = rte_ring_lookup(ring_name);
-                    printf("Index %d RingCount %d\n", index, rte_ring_count(encode_ring_ptr));
+                    //printf("Index %d RingCount %d\n", index, rte_ring_count(encode_ring_ptr));
                     rte_ring_enqueue(encode_ring_ptr,(void *)m);
 
                     /* Reset encoding_ring flag */
@@ -769,7 +771,7 @@ main(int argc, char *argv[])
 
                     /* Run encoder function. */
                     net_encode(&encoder_factory);
-                    printf("Pkt added to encoder.\n");
+                    //rintf("Pkt added to encoder.\n");
 
                     /* If rst_encode set: reset encoding ring */
                     if(unlikely(rst_encode == 1))
