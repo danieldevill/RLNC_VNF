@@ -231,15 +231,15 @@ genID_in_genTable(char *generationID) //Need to add a flushing policy
 
         if(new_ring!=NULL) //If ring created sucessfully.
         {
-            printf("GEN TABLE UPDATED:\n");
-            for(uint i=0;i<=genIDcounter;i++)
-            {
-                for(uint j = 0;j<GENID_LEN;j++)
-                {
-                    printf("%02X ",genID_table[i].ID[j]);
-                }
-                printf("\n");
-            }
+            // printf("GEN TABLE UPDATED:\n");
+            // for(uint i=0;i<=genIDcounter;i++)
+            // {
+            //     for(uint j = 0;j<GENID_LEN;j++)
+            //     {
+            //         printf("%02X ",genID_table[i].ID[j]);
+            //     }
+            //     printf("\n");
+            // }
 
             genIDcounter++;
         }
@@ -355,7 +355,7 @@ net_encode(kodoc_factory_t *encoder_factory)
 
                         //Temp print encoded packet
                         //rte_pktmbuf_dump(stdout,m,250);
-                        //rte_pktmbuf_dump(stdout,encoded_mbuf,250);
+                        rte_pktmbuf_dump(stdout,encoded_mbuf,250);
                         //printf("\n\n");
 
                         /* Transmit coded packet */
@@ -369,17 +369,28 @@ net_encode(kodoc_factory_t *encoder_factory)
 
                     //Coder BENCHMARK end.
                     t_encoder_coder = clock() - t_encoder_coder;
-                    printf("t_encoder_load: %f\n",((double)t_encoder_load)/CLOCKS_PER_SEC);
-                    printf("t_encoder_coder: %f\n",((double)t_encoder_coder)/CLOCKS_PER_SEC);
+                    //printf("t_encoder_load: %f\n",((double)t_encoder_load)/CLOCKS_PER_SEC);
+                    //printf("t_encoder_coder: %f\n",((double)t_encoder_coder)/CLOCKS_PER_SEC);
 
                     rte_pktmbuf_free(rte_mbuf_data_in);
                     kodoc_delete_coder(encoder);
 
                     //Overall BENCHMARK end.
                     t_encoder_overall = clock() - t_encoder_overall;
-                    printf("t_encoder_overall: %f\n\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
+                    //printf("t_encoder_overall: %f\n\n",((double)t_encoder_overall)/CLOCKS_PER_SEC);
 
-                    
+                    //Dump BENCHMARKS to file
+                    // FILE *pFile;
+                    // char buffer[256];
+
+                    // pFile=fopen("ENCODER_BENCHMARKS.txt", "a");
+                    // if(pFile==NULL) {
+                    //     perror("Error opening file.");
+                    // }
+                    // else {
+                    //     fprintf(pFile, "%f,%f,%f\n", ((double)t_encoder_load)/CLOCKS_PER_SEC, ((double)t_encoder_coder)/CLOCKS_PER_SEC, ((double)t_encoder_overall)/CLOCKS_PER_SEC);
+                    // }
+                    // fclose(pFile);
 
                 }
                 else
@@ -409,11 +420,12 @@ net_decode(kodoc_factory_t *decoder_factory)
 
         if(decoding_ring!=NULL)
         {
-            printf("In Ring %s Count:%d\n",decoding_ring->name,rte_ring_count(decoding_ring));
+            //printf("In Ring %s Count:%d\n",decoding_ring->name,rte_ring_count(decoding_ring));
             if(rte_ring_count(decoding_ring)>=MAX_SYMBOLS-1) //Check if ring is fulled, if so, begin decoding. Also need to add if the time limit is reached as an OR.
             {
                 //BENCHMARK
                 t_decoder_overall = clock();
+                t_decoder_load = clock();
 
                 //Begin decoding on rings.
                 uint* obj_left = 0;
@@ -423,7 +435,14 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                 if(obj_dequeued>=(int)MAX_SYMBOLS-1)
                 {
-                    printf("Decoding..\n");
+                    //printf("Decoding..\n");
+
+                    //BENCHMARK
+                    //End load-in BENCHMARK
+                    t_decoder_load = clock() - t_decoder_load;
+                    //Start coder BENCHMARK.
+                    t_decoder_coder = clock();
+
                     //Create decoder
                     kodoc_coder_t decoder = kodoc_factory_build_coder(*decoder_factory);
                     //Create Data buffers
@@ -435,9 +454,6 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                     //Specifies the data buffer where the decoder will store the decoded symbol.
                     kodoc_set_mutable_symbols(decoder , data_out, block_size);
-
-                    //BENCHMARK
-                    t_decoder_coder = clock();
 
                     //Loop through each packet in the queue. In the future, it would be better to encode as a group using pointers instead.
                     uint pkt=0;
@@ -456,7 +472,7 @@ net_decode(kodoc_factory_t *decoder_factory)
                             genIDcounter--;
                             rte_pktmbuf_free(rte_mbuf_data_out);
                             kodoc_delete_coder(decoder);
-                            printf("GENID removed\n");
+                            //printf("GENID removed\n");
                             return;
                         }
                         struct rte_mbuf *m = dequeued_data[pkt];
@@ -477,7 +493,7 @@ net_decode(kodoc_factory_t *decoder_factory)
                         kodoc_read_payload(decoder,payload);
 
                         //Decoder rank indicates how many symbols have been decoded.
-                        printf("Payload processed by decoder, current rank = %d\n", rank);
+                        //printf("Payload processed by decoder, current rank = %d\n", rank);
                         rte_pktmbuf_free(rte_mbuf_payload);
 
                         pkt++;
@@ -485,7 +501,7 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                     //BENCHMARK end.
                     t_decoder_coder = clock() - t_decoder_coder;
-                    printf("\n\n\n\n\n\nt_decoder_coder: %f\n\n\n\n\n\n",((double)t_decoder_coder)/CLOCKS_PER_SEC);
+                    //printf("t_decoder_coder: %f\n",((double)t_decoder_coder)/CLOCKS_PER_SEC);
 
                     uint8_t* pkt_ptr = data_out;
                     for(uint pkt=0;pkt<MAX_SYMBOLS-1;pkt++) //Get decoded packets from data_out and send those out again. Resultant packets are systematic.
@@ -536,17 +552,17 @@ net_decode(kodoc_factory_t *decoder_factory)
                     memset(&genID_table[i], 0, sizeof(struct generationID));
                     genIDcounter--;
 
-                    printf("GENID Deleted: GEN TABLE UPDATED:\n");
+                    //printf("GENID Deleted: GEN TABLE UPDATED:\n");
                     for(uint genIndex=0;genIndex<=genIDcounter;genIndex++)
                     {
                         char ring_name[GENID_LEN+1];
                         rte_memcpy(ring_name,(genID_table+genIndex)->ID,GENID_LEN);
-                        printf("%s:", ring_name);
-                        for(uint j = 0;j<GENID_LEN;j++)
-                        {
-                            printf("%02X ",genID_table[genIndex].ID[j]);
-                        }
-                        printf("\n");
+                        // printf("%s:", ring_name);
+                        // for(uint j = 0;j<GENID_LEN;j++)
+                        // {
+                        //     printf("%02X ",genID_table[genIndex].ID[j]);
+                        // }
+                        // printf("\n");
                     }
 
                     //Free decoder.
@@ -558,7 +574,22 @@ net_decode(kodoc_factory_t *decoder_factory)
 
                 //BENCHMARK end.
                 t_decoder_overall = clock() - t_decoder_overall;
-                printf("\n\n\n\n\nt_decoder_overall: %f\n\n\n\n\n\n\n",((double)t_decoder_overall)/CLOCKS_PER_SEC);
+                //printf("t_decoder_overall: %f",((double)t_decoder_overall)/CLOCKS_PER_SEC);
+
+
+                //Dump BENCHMARKS to file
+                // FILE *pFile;
+                // char buffer[256];
+
+                // pFile=fopen("DECODER_BENCHMARKS.txt", "a");
+                // if(pFile==NULL) {
+                //     perror("Error opening file.");
+                // }
+                // else {
+                //     fprintf(pFile, "%f,%f,%f\n", ((double)t_decoder_load)/CLOCKS_PER_SEC, ((double)t_decoder_coder)/CLOCKS_PER_SEC, ((double)t_decoder_overall)/CLOCKS_PER_SEC);
+                // }
+                // fclose(pFile);
+
             }   
         }
     }
@@ -782,11 +813,11 @@ main(int argc, char *argv[])
                 }
                 else if(coder_idx==1)
                 {
-                    printf("Decode\n");
+                    //printf("Decode\n");
 
                     struct rte_mbuf *m = pkts[pkt];
 
-                    rte_pktmbuf_dump(stdout,m,250);
+                    //rte_pktmbuf_dump(stdout,m,250);
 
                     // Get recieved packet
                     const unsigned char* data = rte_pktmbuf_mtod(m, void *);
